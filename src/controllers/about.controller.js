@@ -17,15 +17,18 @@ const readAbout = async (_req, _res) => {
 
     return _res.status(200).json({ 
       success: true,
-      body: about,
-      message: 'About data read successfully',
+      body: {
+        about,
+      },
     });
   } catch (_err) { 
     console.log(`[readAbout] Internal server error: ${_err.message}`);
 
     return _res.status(500).json({ 
       success: false,
-      message: 'Internal server error',
+      body: {
+        message: 'Internal server error',
+      },
     });
   };
 };
@@ -117,7 +120,7 @@ const updateAbout = async (_req, _res) => {
       };
     };
 
-    const update = await About.findOneAndUpdate(
+    const about = await About.findOneAndUpdate(
       {},
       { 
         imageUrls,
@@ -133,7 +136,7 @@ const updateAbout = async (_req, _res) => {
       },
     );
 
-    const isUpdated = !!update;
+    const isUpdated = !!about;
 
     if (!isUpdated) { 
       console.log('[updateAbout] Unable to update about data');
@@ -149,7 +152,9 @@ const updateAbout = async (_req, _res) => {
     // TODO:Verify status code for updating resource below.
     return _res.status(200).json({
       success: true,
-      body: update,
+      body : { 
+        about,
+      },
       message: 'About data updated successfully',
     });
   } catch (_err) { 

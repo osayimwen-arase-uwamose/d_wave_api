@@ -2,8 +2,8 @@ import { model, Schema } from "mongoose";
 
 const landingSchema = new Schema({ 
   imageUrls: [{ 
-    type: String,
-    required: true,
+    url: String,
+    publicId: String
   }],
 
   title: { 
@@ -60,8 +60,8 @@ const landingSchema = new Schema({
     }],
 
     serviceImageUrls: [{ 
-      type: String,
-      required: true,
+      url: String,
+      publicId: String,
     }],
   },
 });

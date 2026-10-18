@@ -17,7 +17,9 @@ const readLanding = async (_req, _res) => {
 
     return _res.status(200).json({ 
       success: true,
-      body: landing,
+      body: { 
+        landing,
+      },
       message: 'Landing data read successfully',
     });
   } catch (_err) { 
@@ -115,7 +117,23 @@ const updateLanding = async (_req, _res) => {
       };
     };
 
-    const update = await Landing.findOneAndUpdate(
+    for (const _image of [...imageUrls, ...serviceImageUrls]) { 
+      const { 
+        url,
+        publicId
+      } = _image;
+
+      if (!url || !publicId) { 
+        console.log(`[updateLanding] invalid/incomplete data: ${_image}`);
+
+        return _res.status(400).json({ 
+          success: false,
+          message: 'Invalid/Incomplete data',
+        }); 
+      };
+    }
+
+    const landing = await Landing.findOneAndUpdate(
       {},
       { 
         imageUrls,
@@ -131,7 +149,7 @@ const updateLanding = async (_req, _res) => {
       },
     );
 
-    const isUpdated = !!update;
+    const isUpdated = !!landing;
 
     if (!isUpdated) { 
       console.log('[updateLanding] Unable to update landing data');
@@ -147,7 +165,9 @@ const updateLanding = async (_req, _res) => {
     // TODO:Verify status code for updating resource below.
     return _res.status(200).json({
       success: true,
-      body: update,
+      body: { 
+        landing,
+      },
       message: 'Landing data updated successfully',
     });
 
