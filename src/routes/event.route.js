@@ -1,20 +1,57 @@
 import { Router } from "express";
-import { 
-  createEvent, 
-  readEvents,
-  updateEvent,
-  deleteEvent,
+
+import {
+  create,
+  getAll,
+  getOne,
+  update,
+  remove,
 } from "../controllers/event.controller.js";
-import galleryRoute from "./gallery.route.js";
 
-const route = Router();
+import { 
+  createEventSchema, 
+  updateEventSchema 
+} from "../validators/event.validators.js";
 
-route.post('/create', createEvent);
-// TODO: What if someone goes directly to the event page without first loading the hoomepage and so populating the local storage with the entire events initially? They shouldn't have to load the entire thing just to view one and so an endpoint should be able view only one.
-route.get('/read', readEvents);
-route.patch('/update/:eventId', updateEvent);
-route.delete('/delete/:eventId', deleteEvent);
+import authenticate from "../middlewares/authenticate.js";
+import requireRole from "../middlewares/require-role.js";
+import validateSchema from "../middlewares/validate-schema.js";
 
-route.use('/:eventId/gallery', galleryRoute);
+import asyncHandler from "../utils/async-handler.js";
 
-export default route;
+const router = Router();
+
+router.get(
+  "/",
+  asyncHandler(getAll),
+);
+
+router.get(
+  "/:eventId",
+  asyncHandler(getOne),
+);
+
+router.post(
+  "/",
+  authenticate,
+  requireRole('admin'),
+  validateSchema(createEventSchema),
+  asyncHandler(create),
+);
+
+router.patch(
+  "/:eventId",
+  authenticate,
+  requireRole('admin'),
+  validateSchema(updateEventSchema),
+  asyncHandler(update),
+);
+
+router.delete(
+  "/:eventId",
+  authenticate,
+  requireRole('admin'),
+  asyncHandler(remove),
+);
+
+export default router;

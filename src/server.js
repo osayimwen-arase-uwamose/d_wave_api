@@ -1,26 +1,46 @@
-import dotenv from "dotenv"
-import connectDB from "./config/connect_db.js"
 import app from "./app.js";
 
-dotenv.config();
+import { env } from "./config/env.js";
 
-(async () => {
-  try {
-    await connectDB();
+import logger from "./lib/logger.js";
 
-    app.on('error', (_err) => {
-      console.log(`[server] Error starting server: ${_err.message}`);
-      throw new Error(_err);
-    });
+import { 
+  connectDatabase,
+  disconnectDatabase,
+} from "./lib/mongoose.js";
 
-    const PORT = process.env.PORT || 5000;
+let server;
 
-    app.listen(PORT, () => {
-      console.log(`[server] Server is running on port: ${PORT}`);
-    });
-  } catch (_err) {
-    console.log(`[server] Server failed to start: ${_err}`);
+const start = async () => { 
+  try { 
+    await connectDatabase();
+
+    server = app.listen(
+      env.PORT,
+      () => { 
+        logger.info(
+          { 
+            port: env.PORT,
+            environment: env.NODE_ENV,
+          },
+
+          'Curriculhub API started'
+        );
+      },
+    );
+  } catch (_err) { 
+    logger.fatal(
+      { 
+        error: _err
+      },
+
+      'Failed to start server'
+    )
 
     process.exit(1);
-  }
-})();
+  };
+};
+
+//TODO: Add shutdown function and criterias
+
+start();

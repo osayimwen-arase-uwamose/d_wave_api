@@ -44,6 +44,11 @@ const eventSchema = new Schema({
     required: true,
     trim: true,
   },
+  flyerPublicId: {
+    type: String,
+    required: true,
+    trim: true,
+  },
   description: {
     type: String,
     required: true,
