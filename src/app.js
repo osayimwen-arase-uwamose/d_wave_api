@@ -2,23 +2,35 @@ import express from "express";
 import cors from "cors";
 // TODO: Uninstall cookie prarser
 import cookieParser from "cookie-parser";
+import { env } from "./config/env.js";
 
+import authRouter from "./routes/auth.routes.js"
 import eventRouter from "./routes/event.route.js";
 import fileUploadRouter from "./routes/file_upload.route.js";
 import landingRouter from "./routes/landing.route.js";
 import aboutRouter from "./routes/about.route.js";
 import metaDataRouter from "./routes/meta_data.route.js";
+import galleryRouter from "./routes/gallery.route.js";
 
 const app = express();
 
 // app.use(cookieParser());
+app.use(
+  cors({ 
+    origin: env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(express.json());
-app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 
+
+app.use('/auth', authRouter);
 app.use('/events', eventRouter);
 app.use('/upload', fileUploadRouter);
 app.use('/landing', landingRouter);
 app.use('/about', aboutRouter);
-app.use('/meta_data', metaDataRouter);
+app.use('/meta-data', metaDataRouter);
+app.use('/gallery', galleryRouter)
 
 export default app;
