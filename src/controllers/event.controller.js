@@ -1,165 +1,88 @@
-import { Event } from "../models/event.model.js";
+import { 
+  getEvents,
+  getEventById,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+} from "../services/event.service.js";
 
-// TODO: Explore adding an end point for gettting a specific event in cases where a particular event page is being loaded and the local storage/cache is empty. INstead of fetching the entire events using readEvents, simply slow load readEvents then load that event only at that moment
-const createEvent = async (_req, _res) => {
-  try {
-    const {
-      title, 
-      scheduledAt, 
-      venue, 
-      category, 
-      flyerUrl, 
-      description, 
-      ticketUrl,
-    } = _req.body;
+const create = async (req, res) => {
 
-    if (
-      !title 
-      || !scheduledAt 
-      || !venue 
-      || !category 
-      || !flyerUrl 
-      || !description 
-      || !ticketUrl
-    ) { 
-      console.log('[createEvent] Missing fields in request body');
+  const { 
+    body,
+  } = req.validated;
 
-      return _res.status(400).json({ message: 'All fields are required' });
-    };
+  const event = await createEvent(body);
 
-    const event = new Event({
-      title, 
-      scheduledAt, 
-      venue, 
-      category, 
-      flyerUrl, 
-      description, 
-      ticketUrl,
-    });
-
-    await event.save();
-
-    console.log(`[createEvent] Event created successfully: ${title}`);
-
-    // TODO:Verify status code for creating resource below. 
-    return _res.status(202).json({ 
+  return res.status(201).json({
+    success: true,
+    message: "Event created successfully.",
+    data: {
       event,
-      message: 'Event created successfully',
-    });
-  } catch (_err) {
-    // TODO: verify the spacing within the object literals below and in other source files in the code base.
-    console.log(`[createEvent] Internal server error: ${_err.message}`);
-
-    return _res.status(500).json({ message: 'Internal server error' });
-  };
+    },
+  });
 };
 
-// TODO: Verify adding comma after the last parameter using airbnb style guide since this isn't an object.
-const readEvents = async (_req, _res) => {
-  try {
-    const events = await Event.find();
+const getAll = async (req, res) => {
+  const events = await getEvents();
 
-    if (!events) { 
-      console.log('[readEvents] No event found');
-
-      return _res.status(404).json({ message: 'No event found' });
-    };
-
-    console.log('[readEvents] Event(s) read successfully');
-
-    return _res.status(200).json({ 
+  return res.status(200).json({
+    success: true,
+    data: {
       events,
-      success: true,
-    });
-  } catch (_err) {
-    return _res.status(500).json({ 
-      success: false,
-      message: 'Internal server error'
-    });
-
-    console.log(`[readEvents] Internal server error: ${_err.message}`);
-  };
+    },
+  });
 };
 
-const updateEvent = async (_req, _res) => {
-  try {
-    const { eventId } = _req.params;
-    const updateData = _req.body;
+const getOne = async (req, res) => {
+  const { eventId, } = req.params;
 
-    if (!updateData) { 
-      console.log('[updateEvent] Missing update data in request');
+  const event = await getEventById(eventId);
 
-      return _res.status(400).json({ message: 'update data is required' });
-    };
-
-    const updated = await Event.findByIdAndUpdate(
-      eventId,
-      updateData,
-      { new: true },
-    );
-
-    if (!updated) { 
-      console.log('[updateEvents] Event not found');
-
-      return _res.status(404).json({ message: 'Event not found' });
-    };
-
-    console.log(`[updateEvent] Event updated successfully: ${updated.title}`);
-
-    // TODO:Verify status code for updating resource below.
-    return _res.status(202).json({ 
-      updated,
-      success: true,
-      message: `${updated.title} updated successfully`,
-    });
-  } catch (_err) {
-    console.log(`[updateEvent] Internal server error: ${_err.message}`)
-
-    return _res.status(500).json({ 
-      success: false,
-      message: 'Internal server error'
-    });
-  };
+  return res.status(200).json({
+    success: true,
+    data: {
+      event,
+    },
+  });
 };
 
-const deleteEvent = async (_req, _res) => {
-  try {
-    const { eventId } = _req.params;
+const update = async (req, res) => {
+  const { eventId, } = req.params;
 
-    if (!eventId) { 
-      console.log('[deleteEvent] Missing event id in request');
+  const { 
+    body,
+  } = req.validated;
 
-      return _res.status(400).json({ message: 'Missing event Id' });
-    };
+  const event = await updateEvent(
+    eventId,
+    body,
+  );
 
-    const deleted = await Event.findByIdAndDelete( eventId );
+  return res.status(200).json({
+    success: true,
+    message: "Event updated successfully.",
+    data: {
+      event,
+    },
+  });
+};
 
-    if (!deleted) { 
-      console.log('[deleteEvent] Event not found');
+const remove = async (req, res) => {
+  const { eventId } = req.params;
 
-      return _res.status(404).json({ message: 'Event not found' });
-    };
+  await deleteEvent(eventId);
 
-    console.log(`[deleteEvent] Event deleted successfully: ${deleted.title}`);
-
-    // TODO:Verify status code for deleting resource below. 
-    return _res.status(202).json({ 
-      success: true,
-      message: `${deleted.title} deleted successfully`,
-    });
-  } catch (_err) {
-    console.log(`[deleteEvent] Internal server error: ${_err.message}`);
-    
-    return _res.status(500).json({ 
-      success: false,
-      message: 'Internal server error'
-    });
-  };
+  return res.status(200).json({
+    success: true,
+    message: "Event deleted successfully.",
+  });
 };
 
 export {
-  createEvent,
-  readEvents,
-  updateEvent,
-  deleteEvent,
+  create,
+  getAll,
+  getOne,
+  update,
+  remove,
 };
