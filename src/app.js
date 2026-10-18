@@ -18,7 +18,7 @@ const app = express();
 // app.use(cookieParser());
 app.use(
   cors({ 
-    origin: function () { 
+    origin: function (origin, callback) { 
       if (!origin) return callback(null, true);
 
       const allowedOrigins = [
