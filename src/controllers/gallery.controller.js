@@ -1,18 +1,27 @@
 import { Event } from "../models/event.model.js";
 import cloudinary from "../config/cloudinary.js";
 
-const addGalleryPhoto = async (_req, _res) => { 
+const addGalleryPhoto = async (req, res) => { 
   try { 
     // TODO: If there is no event Id in params, would this throw an error of unable to destructure an so server error of 500 when it is a 400 error?
-    const { eventId } = _req.params;
+    const { eventId } = req.params;
+
+    console.log("event id:", eventId)
 
     const { 
       galleryPhotoUrl,
       publicId,
-      caption,
-    } = _req.body;
+      caption = "",
+    } = req.body;
 
-    const alreadyExists = await Event.findOne({
+    if (!eventId || !mongoose.isValidObjectId(eventId)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid event ID is required.",
+      });
+    };
+
+    const alreadyExists = await Event.exists({
       _id: eventId,
       "galleryPhotos.publicId": publicId,
     });
@@ -20,7 +29,7 @@ const addGalleryPhoto = async (_req, _res) => {
     if (alreadyExists) { 
       console.log('[addGalleryPhoto] Duplicate public id detected');
 
-      return _res.status(409).json({ 
+      return res.status(409).json({ 
         success: false,
         message: 'Photo already added',
       });
@@ -29,7 +38,7 @@ const addGalleryPhoto = async (_req, _res) => {
     const event = await Event.findById(eventId);
     
     if (!event) { 
-      return _res.status(404).json({ 
+      return res.status(404).json({ 
         message: 'Event not found',
       });
     };
@@ -44,15 +53,15 @@ const addGalleryPhoto = async (_req, _res) => {
     await event.save();
 
     // TODO: Verify status code for updating a resource
-    return _res.status(200).json({ 
-      event,
+    return res.status(200).json({ 
       success: true,
       message: `gallery photos added to ${event.title} successfully`,
+      body: { event },
     });
   } catch (_err) { 
     console.log(`[addGalleryPhoto] Internal server error: ${_err.message}`);
 
-    return _res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Internal server error'
     });

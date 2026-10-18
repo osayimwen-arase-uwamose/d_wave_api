@@ -5,17 +5,17 @@ import {
   updateGalleryPhotoCaption,
 } from "../controllers/gallery.controller.js";
 
-const route = Router({ 
-  mergeParams: true,
-});
+const route = Router();
 
-route.post('/add_photo', addGalleryPhoto);
+route.post('/:eventId', addGalleryPhoto);
+
 route.delete(
-  '/delete_photo/:galleryPhotoId',
+  '/:eventId/:galleryPhotoId',
   deleteGalleryPhoto,
 );
+
 route.patch(
-  '/update_caption/:galleryPhotoId',
+  '/:eventId/:galleryPhotoId',
   updateGalleryPhotoCaption,
 );
 
