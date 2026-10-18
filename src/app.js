@@ -11,13 +11,32 @@ import landingRouter from "./routes/landing.route.js";
 import aboutRouter from "./routes/about.route.js";
 import metaDataRouter from "./routes/meta_data.route.js";
 import galleryRouter from "./routes/gallery.route.js";
+import AppError from "./utils/app-error.js";
 
 const app = express();
 
 // app.use(cookieParser());
 app.use(
   cors({ 
-    origin: env.FRONTEND_URL,
+    origin: function () { 
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        'https://admin.dwaveentertainment.co.uk',
+        env.FRONTEND_URL
+      ];
+
+      if (allowedOrigins.indexOf(origin) !== -1) { 
+        callback(null, true);
+      } else { 
+        callback(
+          new AppError(
+            403,
+            'CORS Error: Access Denied'
+          )
+        );
+      };
+    },
     credentials: true,
   })
 );
