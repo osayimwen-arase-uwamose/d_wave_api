@@ -1,5 +1,8 @@
-import { Event } from "../models/event.model.js";
+import mongoose from "mongoose";
+
 import cloudinary from "../config/cloudinary.js";
+
+import { Event } from "../models/event.model.js";
 
 const addGalleryPhoto = async (req, res) => { 
   try { 
