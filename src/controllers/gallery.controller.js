@@ -1,128 +1,160 @@
 import mongoose from "mongoose";
-
 import cloudinary from "../config/cloudinary.js";
-
 import { Event } from "../models/event.model.js";
 
-const addGalleryPhoto = async (req, res) => { 
-  try { 
-    // TODO: If there is no event Id in params, would this throw an error of unable to destructure an so server error of 500 when it is a 400 error?
+const addGalleryPhoto = async (req, res) => {
+  try {
     const { eventId } = req.params;
-
-    console.log("event id:", eventId)
-
-    const { 
-      galleryPhotoUrl,
-      publicId,
-      caption = "",
-    } = req.body;
 
     if (!eventId || !mongoose.isValidObjectId(eventId)) {
       return res.status(400).json({
         success: false,
         message: "A valid event ID is required.",
       });
-    };
+    }
 
-    const alreadyExists = await Event.exists({
-      _id: eventId,
-      "galleryPhotos.publicId": publicId,
-    });
+    const {
+      mediaType = "image",
+      galleryPhotoUrl,
+      videoUrl,
+      publicId,
+      caption = "",
+    } = req.body;
 
-    if (alreadyExists) { 
-      console.log('[addGalleryPhoto] Duplicate public id detected');
-
-      return res.status(409).json({ 
+    if (!["image", "video"].includes(mediaType)) {
+      return res.status(400).json({
         success: false,
-        message: 'Photo already added',
+        message: "Invalid gallery media type.",
       });
-    };
+    }
+
+    if (!publicId || typeof publicId !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "A valid media public ID is required.",
+      });
+    }
+
+    const mediaUrl = mediaType === "video" ? videoUrl : galleryPhotoUrl;
+
+    if (!mediaUrl || typeof mediaUrl !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: `A valid ${mediaType} URL is required.`,
+      });
+    }
 
     const event = await Event.findById(eventId);
-    
-    if (!event) { 
-      return res.status(404).json({ 
-        message: 'Event not found',
-      });
-    };
 
-    //TODO: Prevent duplicate image public id. Even if admin wants to upload one image multiple times, they should have different public ids.
-    event.galleryPhotos.push({ 
-      galleryPhotoUrl,
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found.",
+      });
+    }
+
+    const alreadyExists = event.galleryPhotos.some(
+      (item) => item.publicId === publicId
+    );
+
+    if (alreadyExists) {
+      return res.status(409).json({
+        success: false,
+        message: "This media has already been added to the gallery.",
+      });
+    }
+
+    event.galleryPhotos.push({
+      mediaType,
+      galleryPhotoUrl: mediaType === "image" ? galleryPhotoUrl : undefined,
+      videoUrl: mediaType === "video" ? videoUrl : undefined,
       publicId,
       caption: caption || "",
     });
 
     await event.save();
 
-    // TODO: Verify status code for updating a resource
-    return res.status(200).json({ 
+    return res.status(201).json({
       success: true,
-      message: `gallery photos added to ${event.title} successfully`,
+      message: `Gallery ${mediaType} added to ${event.title} successfully.`,
       body: { event },
     });
-  } catch (_err) { 
-    console.log(`[addGalleryPhoto] Internal server error: ${_err.message}`);
+  } catch (error) {
+    console.error(`[addGalleryPhoto] ${error.message}`);
 
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error.",
     });
-  };
+  }
 };
 
-const deleteGalleryPhoto = async (_req, _res) => { 
-  try { 
-    const { eventId, galleryPhotoId, } = _req.params;
+const deleteGalleryPhoto = async (req, res) => {
+  try {
+    const { eventId, galleryPhotoId } = req.params;
+
+    if (
+      !mongoose.isValidObjectId(eventId) ||
+      !mongoose.isValidObjectId(galleryPhotoId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event or gallery media ID.",
+      });
+    }
 
     const event = await Event.findById(eventId);
 
-    if (!event) { 
-      console.log('[deleteGalleryPhoto] Event id does not matvh any event');
-
-      return _res.status(404).json({ 
+    if (!event) {
+      return res.status(404).json({
         success: false,
-        message: 'Event not found',
+        message: "Event not found.",
       });
-    };
+    }
 
-    const photo = event.galleryPhotos.id(galleryPhotoId);
+    const media = event.galleryPhotos.id(galleryPhotoId);
 
-    if (!photo) { 
-      console.log('[deleteGalleryPhoto] Gallery photo id does not match any photo');
-
-      return _res.status(404).json({ 
+    if (!media) {
+      return res.status(404).json({
         success: false,
-        message: 'Photo not found',
+        message: "Gallery media not found.",
       });
-    };
+    }
 
-    const cloudinaryDelete = await cloudinary.uploader.destroy(photo.publicId);
+    const resourceType = media.mediaType === "video" ? "video" : "image";
 
-    if (cloudinaryDelete.result !== "ok") { 
-      console.log('[deleteGalleryPhoto] Failed to delete photo from cloudinary');
+    const cloudinaryDelete = await cloudinary.uploader.destroy(
+      media.publicId,
+      { resource_type: resourceType }
+    );
 
-      throw new Error ('Failed to delete photo');
-    };
+    if (cloudinaryDelete.result !== "ok") {
+      console.error(
+        `[deleteGalleryPhoto] Cloudinary deletion failed: ${cloudinaryDelete.result}`
+      );
 
-    photo.deleteOne();
+      return res.status(502).json({
+        success: false,
+        message: "Unable to delete media from storage.",
+      });
+    }
+
+    media.deleteOne();
 
     await event.save();
 
-    console.log('[deleteGalleryPhoto] Gallery photo deleted successfully');
-
-    return _res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      message: 'Caption deleted successfully',
+      message: "Gallery media deleted successfully.",
     });
-  } catch (_err) { 
-    console.log(`[deleteGalleryPhoto] Internal server error ${_err.message}`);
+  } catch (error) {
+    console.error(`[deleteGalleryPhoto] ${error.message}`);
 
-    return _res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error.",
     });
-  };
+  }
 };
 
 const updateGalleryPhotoCaption = async (_req, _res) => { 

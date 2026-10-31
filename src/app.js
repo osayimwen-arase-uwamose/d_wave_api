@@ -7,10 +7,12 @@ import { env } from "./config/env.js";
 import authRouter from "./routes/auth.routes.js"
 import eventRouter from "./routes/event.route.js";
 import fileUploadRouter from "./routes/file_upload.route.js";
-import landingRouter from "./routes/landing.route.js";
 import aboutRouter from "./routes/about.route.js";
 import metaDataRouter from "./routes/meta_data.route.js";
 import galleryRouter from "./routes/gallery.route.js";
+import landingRouter from "./routes/landing.route.js";
+import videoUploadRoutes from "./routes/videoUpload.routes.js";
+
 import AppError from "./utils/app-error.js";
 
 const app = express();
@@ -22,6 +24,7 @@ app.use(
       if (!origin) return callback(null, true);
 
       const allowedOrigins = [
+        'http://localhost:5173/',
         'https://admin.dwaveentertainment.co.uk',
         env.FRONTEND_URL
       ];
@@ -47,9 +50,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/auth', authRouter);
 app.use('/events', eventRouter);
 app.use('/upload', fileUploadRouter);
-app.use('/landing', landingRouter);
 app.use('/about', aboutRouter);
 app.use('/meta-data', metaDataRouter);
-app.use('/gallery', galleryRouter)
+app.use('/gallery', galleryRouter);
+app.use('/landing', landingRouter);
+app.use('/videos', videoUploadRoutes);
 
 export default app;
